@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>숙제리스트</title>
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/css/bootstrap.min.css">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR&display=swap" rel="stylesheet">
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
+    <style>
+    body {font-family: 'Noto Sans KR', sans-serif;}
+    .modal-mask {
+        position: fixed;
+        z-index: 9998;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, .5);
+        display: table;
+        transition: opacity .3s ease;
+    }
+    
+    .modal-wrapper {
+        display: table-cell;
+        vertical-align: middle;
+    }
+    
+    .modal-container {
+        width: 350px;
+        margin: 0px auto;
+        padding: 20px 30px;
+        background-color: #fff;
+        border-radius: 2px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+        transition: all .3s ease;
+        font-family: Helvetica, Arial, sans-serif;
+    }
+    
+    .modal-header h3 {
+        margin: 0;
+    }
+
+    .modal-default-button {
+        float: right;
+    }
+        
+    .modal-enter {
+        opacity: 0;
+    }
+    
+    .modal-leave-active {
+        opacity: 0;
+    }
+    
+    .modal-enter .modal-container,
+    .modal-leave-active .modal-container {
+        -webkit-transform: scale(1.1);
+        transform: scale(1.1);
+    }
+    th {text-align: center;}
+    td {text-align: center; padding: 6px 10px;}
+    td label {margin-left: 10px; margin-bottom: 0;}
+    td label:nth-child(1) {margin-left: 0;}
+    td label input {display: none;}
+    td label input + .check-icon {
+        width: 40px;
+        height: 40px;
+        border: 2px solid #999;
+        border-radius: 50%;
+        background-size: cover;
+        cursor: pointer;
+    }
+    td label input:checked + .check-icon {
+        background-image: url("./images/stamp.png");
+    }
+    td label input:disabled + .check-icon {
+        background-color: #ccc;
+    }
+    
+    tr td {
+        white-space: nowrap;
+    }
+    p {margin: 5px 0;}
+    input[type="text"] {display: block; width: 100%;}
+    select {display: block; width: 100%;}
+    .backslash {background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg"><line x1="0" y1="0" x2="100%" y2="100%" stroke="gray" /></svg>');}
+    </style>
+</head>
+<body>
+    <div id="app">
+        <div>
+            <h1>로아 숙제하세요</h1>
+            <table class="table-bordered">
+                <thead>
+                    <tr>
+                        <th class="backslash"></th>
+                        <th v-for="(character,i) in characters" :key="i" @click="showEditModal(character)">
+                            <p><img :src="getClassimage(character.class)" :title="character.class" :alt="character.class"></p>
+                            <p>Lv.{{ character.level }}</p>
+                            <p>{{ character.name }}</p>
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="(homework, i) in dailyHomework" :key="homework.title">
+                        <td>{{ homework.title }}</td>
+                        <td v-for="(character, c) in characters" :key="c">
+                            <label
+                                v-for="(check, j) in character.dailyHomeworkCheckList[i]"
+                                :key="j"
+                            >
+                                <input
+                                    type="checkbox"
+                                    v-model="character.dailyHomeworkCheckList[i][j]"
+                                    :disabled="character.level < homework.minLevel || character.level >= homework.maxLevel"
+                                >
+                                <div class="check-icon"></div>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr v-for="(homework, i) in weekendHomework" :key="homework.title">
+                        <td>{{ homework.title }}</td>
+                        <td v-for="(character, c) in characters" :key="c">
+                            <label
+                                v-for="(check, j) in character.weekendHomeworkCheckList[i]"
+                                :key="j"
+                            >
+                                <input
+                                    type="checkbox"
+                                    v-model="character.weekendHomeworkCheckList[i][j]"
+                                    :disabled="character.level < homework.minLevel || character.level >= homework.maxLevel"
+                                >
+                                <div class="check-icon"></div>
+                            </label>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td>총합골드</td>
+                        <td v-for="(character, i) in characters" :key="i">
+                            {{ getCharacterClearGold(character) }}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+            <button @click="showModal = true" class="btn btn-info">캐릭터 추가</button>
+            <div>모든 캐릭 골드: {{ totalGold }}</div>
+            <modal v-if="showModal">
+                <template slot="header" v-if="isEditMode">
+                    <h3>캐릭터 수정</h3>
+                </template>
+
+                <template slot="content">
+                    <div>
+                        <p>직업</p>
+                        <select v-model="cls" class="form-control">
+                            <option v-for="characterClass in characterClassList" :value="characterClass">{{ characterClass }}</option>
+                        </select>
+                    </div>
+                    <div>
+                        <p>아이템 레벨</p>
+                        <input type="text" class="form-control" v-model="level">
+                    </div>
+                    <div>
+                        <p>캐릭터 이름</p>
+                        <input type="text" class="form-control" v-model="name">
+                    </div>
+                </template>
+                
+                <template slot="footer">
+                    <button class="btn btn-success" @click="editCharacter" v-if="isEditMode">수정</button>
+                    <button class="btn btn-success" @click="addCharacter" v-else>생성</button>
+                    <button class="modal-default-button btn btn-default" @click="closeModal">
+                        닫기
+                    </button>
+                </template>
+            </modal>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+
+    <script type="text/x-template" id="modal-template">
+        <transition name="modal">
+          <div class="modal-mask">
+            <div class="modal-wrapper">
+              <div class="modal-container">
+      
+                <div class="modal-header">
+                  <slot name="header">
+                      <h3>캐릭터 생성</h3>
+                  </slot>
+                </div>
+      
+                <div class="modal-body">
+                  <slot name="content"></slot>
+                </div>
+      
+                <div class="modal-footer">
+                  <slot name="footer">
+                  </slot>
+                </div>
+              </div>
+            </div>
+          </div>
+        </transition>
+    </script>
+    <script>
+
+        var dailyHomework = [
+            {
+                title: "일일 에포나",
+                clearGold: [0,0,0]
+            },
+            {
+                title: "가디언 토벌",
+                clearGold: [0,0]
+            },
+            {
+                title: "카오스 던전",
+                clearGold: [0,0]
+            }
+        ]
+
+        var weekendHomework = [
+            {
+                title: "주간 에포나",
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0,0,0]
+            },
+            {
+                title: "도전 가디언",
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0]
+            },
+            {
+                title: "태만의 바다",
+                minLevel: 915,
+                maxLevel: 1370,
+                clearGold: [180]
+            },
+            {
+                title: "고요한 카르코사",
+                minLevel: 915,
+                maxLevel: 1370,
+                clearGold: [220]
+            },
+            {
+                title: "아르카디아의 성역",
+                minLevel: 915,
+                maxLevel: 1370,
+                clearGold: [240]
+            },
+            {
+                title: "아이라의 눈",
+                minLevel: 1325,
+                maxLevel: 1415,
+                clearGold: [1250]
+            },
+            {
+                title: "오레하 프라바사",
+                minLevel: 1325,
+                maxLevel: 1415,
+                clearGold: [1400]
+            },
+            {
+                title: "아르고스",
+                minLevel: 1325,
+                maxLevel: 1415,
+                clearGold: [1500,800,1000]
+            }
+        ]
+
+        var Character = (function () {
+            function Character(name, level, cls) {
+                this.name = name;
+                this.level = level;
+                this.class = cls;
+                this.dailyHomeworkCheckList = dailyHomework.map(function(homework) {
+                    return homework.clearGold.map(function(clear){
+                        return false
+                    })
+                })
+                this.weekendHomeworkCheckList = weekendHomework.map(function(homework) {
+                    return homework.clearGold.map(function(clear){
+                        return false
+                    })
+                })
+            }
+
+            Character.prototype.resetDailyHomeworkCheckList = function() {
+                this.dailyHomeworkCheckList = dailyHomework.map(function(homework) {
+                    return homework.clearGold.map(function(clear){
+                        return false
+                    })
+                })
+            }
+            Character.prototype.resetWeekendHomeworkCheckList = function() {
+                console.log(this.weekendHomeworkCheckList)
+                this.weekendHomeworkCheckList = weekendHomework.map(function(homework) {
+                    return homework.clearGold.map(function(clear){
+                        return false
+                    })
+                })
+            }
+
+            return Character;
+        }())
+
+        Vue.component('modal', {
+            template: '#modal-template'
+        })
+        
+        var app =  new Vue({
+            el: '#app',
+            data() {
+                return {
+                    showModal: false,
+                    isEditMode: false,
+                    characters: [],
+                    characterClassList: [
+                        "디스트로이어",
+                        "워로드",
+                        "버서커",
+                        "홀리나이트",
+                        "배틀마스터",
+                        "인파이터",
+                        "기공사",
+                        "창술사",
+                        "데빌헌터",
+                        "블래스터",
+                        "호크아이",
+                        "스카우터",
+                        "바드",
+                        "서머너",
+                        "아르카나",
+                        "블레이드",
+                        "데모닉",
+                        "리퍼",
+                        "건슬링어",
+                        "스트라이커"
+                    ],
+                    currentCharacter: null,
+                    name: "",
+                    level: null,
+                    cls: "",
+                    dailyHomework: dailyHomework,
+                    weekendHomework: weekendHomework
+                }
+            },
+            created() {
+                var lastModifiedDate = localStorage.getItem('lastModifiedDate')
+                this.characters = JSON.parse(localStorage.getItem('characters')) || [];
+                this.characters = this.characters.map(character => {
+                    var _character = new Character();
+                    return Object.assign(_character, character);
+                });
+                var today = new Date();
+                if (this.getDailyResetDay(today) > new Date(lastModifiedDate)) {
+                    this.characters.forEach(character => {
+                        character.resetDailyHomeworkCheckList();
+                    }); 
+                }
+                if (this.getWeekendResetDay(today) > new Date(lastModifiedDate)) {
+                    this.characters.forEach(character => {
+                        character.resetWeekendHomeworkCheckList();
+                    }); 
+                    // this.characters = [...this.characters];
+                }
+            },
+            methods: {
+                addCharacter() {
+                    if(!this.name) {
+                        alert("이름 똑바로 입력하세");
+                        return;
+                    }
+                    if(!this.level || isNaN(this.level)) {
+                        alert("레벨 똑바로 입력하세");
+                        return;
+                    }
+                    if(!this.cls) {
+                        alert("직업 똑바로 입력하세");
+                        return;
+                    }
+                    if(this.cls === "서머너") {
+                        alert("혹시...쿠키니");
+                    }
+                    this.characters.push(new Character(this.name, this.level, this.cls));
+                    this.closeModal();
+                },
+                showEditModal(character) {
+                    this.currentCharacter = character;
+                    this.name = character.name;
+                    this.level = character.level;
+                    this.cls = character.class;
+                    this.isEditMode = true;
+                    this.showModal = true;
+                },
+                editCharacter() {
+                    if(!this.name) {
+                        alert("이름 똑바로 입력하세");
+                        return;
+                    }
+                    if(!this.level || isNaN(this.level)) {
+                        alert("레벨 똑바로 입력하세");
+                        return;
+                    }
+                    if(!this.cls) {
+                        alert("직업 똑바로 입력하세");
+                        return;
+                    }
+                    this.currentCharacter.name = this.name;
+                    this.currentCharacter.level = this.level;
+                    this.currentCharacter.class = this.cls;
+                    this.characters = [...this.characters];
+                    this.closeModal();
+                },
+                closeModal() {
+                    this.currentCharacter = null;
+                    this.name = "";
+                    this.level = null;
+                    this.cls = "";
+                    this.isEditMode = false;
+                    this.showModal = false;
+                },
+                getCharacterClearGold(character) {
+                    var totalGold = 0;
+                    for(var i=0; i < this.dailyHomework.length; i++) {
+                        for(var j=0; j < this.dailyHomework[i].clearGold.length; j++) {
+                            if(character.dailyHomeworkCheckList[i][j]){
+                                totalGold += this.dailyHomework[i].clearGold[j];
+                            }
+                        }
+                    }
+                    for(var i=0; i < this.weekendHomework.length; i++) {
+                        for(var j=0; j < this.weekendHomework[i].clearGold.length; j++) {
+                            if(character.weekendHomeworkCheckList[i][j]){
+                                totalGold += this.weekendHomework[i].clearGold[j];
+                            }
+                        }
+                    }
+                    localStorage.setItem("characters", JSON.stringify(this.characters));
+                    localStorage.setItem("lastModifiedDate", new Date());
+                    return totalGold;
+                },
+                getClassimage(cls) {
+                    return `./images/icon_class_${this.characterClassList.findIndex(_cls => _cls === cls) + 1}.png`;
+                },
+                getDailyResetDay(d) {
+                    d = new Date(d);
+                    if(d.getHours() < 6) d.setDate(d.getDate() - 1);
+                    d.setHours(6,0,0,0);
+                    return new Date(d);
+                },
+                getWeekendResetDay(d) {
+                    d = new Date(d);
+                    if(d.getHours() < 6) d.setDate(d.getDate() - 1);
+                    d.setHours(6,0,0,0);
+                    var day = d.getDay(),
+                        diff = d.getDate() - day + (day < 3 ? -4:3);
+                    return new Date(d.setDate(diff));
+                }
+            },
+            computed: {
+                totalGold() {
+                    var _totalGold = 0;
+                    if(!this.characters.length) return 0;
+                    this.characters.forEach(character => {
+                        for(var i=0; i < this.dailyHomework.length; i++) {
+                            for(var j=0; j < this.dailyHomework[i].clearGold.length; j++) {
+                                if(character.dailyHomeworkCheckList[i][j]){
+                                    _totalGold += this.dailyHomework[i].clearGold[j];
+                                }
+                            }
+                        }
+                        for(var i=0; i < this.weekendHomework.length; i++) {
+                            for(var j=0; j < this.weekendHomework[i].clearGold.length; j++) {
+                                if(character.weekendHomeworkCheckList[i][j]){
+                                    _totalGold += this.weekendHomework[i].clearGold[j];
+                                }
+                            }
+                        }
+                    })
+                    return _totalGold;
+                }
+            },
+            watch: {
+                showModal(val) {
+                    if(!val) this.closeModal();
+                }
+            }
+        })
+    </script>
+</body>
+</html>
