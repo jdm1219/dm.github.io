@@ -11,6 +11,9 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.2/js/bootstrap.min.js"></script>
     <style>
     body {font-family: 'Noto Sans KR', sans-serif;}
+    [v-cloak] {
+        display: none;
+    }
     .modal-mask {
         position: fixed;
         z-index: 9998;
@@ -83,6 +86,9 @@
     tr td {
         white-space: nowrap;
     }
+    tr td:first-child img{
+        width: 30px;
+    }
     p {margin: 5px 0;}
     input[type="text"] {display: block; width: 100%;}
     select {display: block; width: 100%;}
@@ -90,7 +96,7 @@
     </style>
 </head>
 <body>
-    <div id="app">
+    <div id="app" v-cloak>
         <div>
             <h1>로아 숙제하세요</h1>
             <table class="table-bordered">
@@ -106,7 +112,10 @@
                 </thead>
                 <tbody>
                     <tr v-for="(homework, i) in dailyHomework" :key="homework.title">
-                        <td>{{ homework.title }}</td>
+                        <td>
+                            <img :src="'./images/' + homework.image" v-if="homework">
+                            <p>{{ homework.title }}</p>
+                        </td>
                         <td v-for="(character, c) in characters" :key="c">
                             <label
                                 v-for="(check, j) in character.dailyHomeworkCheckList[i]"
@@ -122,7 +131,10 @@
                         </td>
                     </tr>
                     <tr v-for="(homework, i) in weekendHomework" :key="homework.title">
-                        <td>{{ homework.title }}</td>
+                        <td>
+                            <img :src="'./images/' + homework.image" v-if="homework">
+                            <p>{{ homework.title }}</p>
+                        </td>
                         <td v-for="(character, c) in characters" :key="c">
                             <label
                                 v-for="(check, j) in character.weekendHomeworkCheckList[i]"
@@ -131,14 +143,17 @@
                                 <input
                                     type="checkbox"
                                     v-model="character.weekendHomeworkCheckList[i][j]"
-                                    :disabled="character.level < homework.minLevel || character.level >= homework.maxLevel"
+                                    :disabled="character.level < homework.minLevel || character.level >= homework.maxLevel || disableCheckbox(homework, character.weekendHomeworkCheckList[i], j)"
                                 >
                                 <div class="check-icon"></div>
+                                <div v-if="homework.checkboxTitle">{{ homework.checkboxTitle[j] }}</div>
                             </label>
                         </td>
                     </tr>
                     <tr>
-                        <td>총합골드</td>
+                        <td>
+                            <img src="./images/gold.png" alt="">
+                        </td>
                         <td v-for="(character, i) in characters" :key="i">
                             {{ getCharacterClearGold(character) }}
                         </td>
@@ -146,7 +161,7 @@
                 </tbody>
             </table>
             <button @click="showModal = true" class="btn btn-info">캐릭터 추가</button>
-            <div>모든 캐릭 골드: {{ totalGold }}</div>
+            <div>총합 <img src="./images/gold.png" style="width: 40px;">: {{ totalGold }}</div>
             <modal v-if="showModal">
                 <template slot="header" v-if="isEditMode">
                     <h3>캐릭터 수정</h3>
@@ -210,16 +225,25 @@
 
         var dailyHomework = [
             {
-                title: "일일 에포나",
-                clearGold: [0,0,0]
-            },
-            {
                 title: "가디언 토벌",
-                clearGold: [0,0]
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0,0],
+                image: "guardian.png"
             },
             {
                 title: "카오스 던전",
-                clearGold: [0,0]
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0,0],
+                image: "chaos_dungeon.png"
+            },
+            {
+                title: "일일 에포나",
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0,0,0],
+                image: "epona_quest1.png"
             }
         ]
 
@@ -228,49 +252,82 @@
                 title: "주간 에포나",
                 minLevel: 0,
                 maxLevel: 9999,
-                clearGold: [0,0,0]
+                clearGold: [0,0,0],
+                image: "epona_quest2.png"
             },
             {
-                title: "도전 가디언",
+                title: "도전 가디언 토벌",
                 minLevel: 0,
                 maxLevel: 9999,
-                clearGold: [0]
+                clearGold: [0,0,0],
+                image: "guardian.png"
             },
             {
                 title: "태만의 바다",
                 minLevel: 915,
                 maxLevel: 1370,
-                clearGold: [180]
+                clearGold: [180],
+                image: "abyss_dungeon1.png"
             },
             {
                 title: "고요한 카르코사",
                 minLevel: 915,
                 maxLevel: 1370,
-                clearGold: [220]
+                clearGold: [220],
+                image: "abyss_dungeon1.png"
             },
             {
                 title: "아르카디아의 성역",
                 minLevel: 915,
                 maxLevel: 1370,
-                clearGold: [240]
+                clearGold: [240],
+                image: "abyss_dungeon1.png"
             },
             {
                 title: "아이라의 눈",
                 minLevel: 1325,
                 maxLevel: 1415,
-                clearGold: [1250]
+                clearGold: [1250],
+                image: "abyss_dungeon1.png"
             },
             {
                 title: "오레하 프라바사",
                 minLevel: 1325,
                 maxLevel: 1415,
-                clearGold: [1400]
+                clearGold: [1400],
+                image: "abyss_dungeon1.png"
+            },
+            {
+                title: "도전 어비스 던전",
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0,0],
+                image: "abyss_dungeon2.png"
             },
             {
                 title: "아르고스",
                 minLevel: 1325,
                 maxLevel: 1415,
-                clearGold: [1500,800,1000]
+                clearGold: [1500,800,1000],
+                image: "abyss_raid.png"
+            },
+            {
+                title: "발탄",
+                minLevel: 1415,
+                maxLevel: 9999,
+                clearGold: [3300,4500],
+                isRadio: true,
+                checkboxTitle: ['노말','하드'],
+                image: "legion_raid.png"
+            },
+            {
+                title: "비아키스",
+                minLevel: 1430,
+                maxLevel: 9999,
+                clearGold: [3300,4500],
+                isRadio: true,
+                checkboxTitle: ['노말','하드'],
+                image: "legion_raid.png"
             }
         ]
 
@@ -385,9 +442,6 @@
                         alert("직업 똑바로 입력하세");
                         return;
                     }
-                    if(this.cls === "서머너") {
-                        alert("혹시...쿠키니");
-                    }
                     this.characters.push(new Character(this.name, this.level, this.cls));
                     this.closeModal();
                 },
@@ -445,6 +499,9 @@
                     localStorage.setItem("characters", JSON.stringify(this.characters));
                     localStorage.setItem("lastModifiedDate", new Date());
                     return totalGold;
+                },
+                disableCheckbox(homework, checkList, index) {
+                    return homework.isRadio && checkList.find(check => check) && !checkList[index]
                 },
                 getClassimage(cls) {
                     return `./images/icon_class_${this.characterClassList.findIndex(_cls => _cls === cls) + 1}.png`;
