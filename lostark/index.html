@@ -135,7 +135,7 @@
                             <img :src="'./images/' + homework.image" v-if="homework">
                             <p>{{ homework.title }}</p>
                         </td>
-                        <td v-for="(character, c) in characters" :key="c">
+                        <td v-for="(character, c) in characters" :key="c" :colspan="homework.isExpedition ? characters.length : 1" v-if="!(homework.isExpedition && c !== 1)">
                             <label
                                 v-for="(check, j) in character.weekendHomeworkCheckList[i]"
                                 :key="j"
@@ -302,6 +302,7 @@
                 minLevel: 0,
                 maxLevel: 9999,
                 clearGold: [0,0],
+                isExpedition: true,
                 image: "abyss_dungeon2.png"
             },
             {
@@ -327,6 +328,22 @@
                 clearGold: [3300,4500],
                 isRadio: true,
                 checkboxTitle: ['노말','하드'],
+                image: "legion_raid.png"
+            },
+            {
+                title: "쿠크세이튼",
+                minLevel: 1475,
+                maxLevel: 9999,
+                clearGold: [4500],
+                checkboxTitle: ['노말'],
+                image: "legion_raid.png"
+            },
+            {
+                title: "쿠크세이튼 리허설",
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0],
+                isExpedition: true,
                 image: "legion_raid.png"
             }
         ]
@@ -412,6 +429,20 @@
                 var lastModifiedDate = localStorage.getItem('lastModifiedDate')
                 this.characters = JSON.parse(localStorage.getItem('characters')) || [];
                 this.characters = this.characters.map(character => {
+                    character.dailyHomeworkCheckList = dailyHomework.map(function(homework, i) {
+                        return homework.clearGold.map(function(clear, j){
+                            if(!character.dailyHomeworkCheckList[i]) return false
+                            if(!character.dailyHomeworkCheckList[i][j]) return false
+                            return true
+                        })
+                    })
+                    character.weekendHomeworkCheckList = weekendHomework.map(function(homework, i) {
+                        return homework.clearGold.map(function(clear, j){
+                            if(!character.weekendHomeworkCheckList[i]) return false
+                            if(!character.weekendHomeworkCheckList[i][j]) return false
+                            return false
+                        })
+                    })
                     var _character = new Character();
                     return Object.assign(_character, character);
                 });
@@ -419,13 +450,12 @@
                 if (this.getDailyResetDay(today) > new Date(lastModifiedDate)) {
                     this.characters.forEach(character => {
                         character.resetDailyHomeworkCheckList();
-                    }); 
+                    });
                 }
                 if (this.getWeekendResetDay(today) > new Date(lastModifiedDate)) {
                     this.characters.forEach(character => {
                         character.resetWeekendHomeworkCheckList();
-                    }); 
-                    // this.characters = [...this.characters];
+                    });
                 }
             },
             methods: {
@@ -482,6 +512,7 @@
                 },
                 getCharacterClearGold(character) {
                     var totalGold = 0;
+                    console.log(character)
                     for(var i=0; i < this.dailyHomework.length; i++) {
                         for(var j=0; j < this.dailyHomework[i].clearGold.length; j++) {
                             if(character.dailyHomeworkCheckList[i][j]){
