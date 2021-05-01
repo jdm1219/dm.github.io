@@ -440,9 +440,10 @@
                         return homework.clearGold.map(function(clear, j){
                             if(!character.weekendHomeworkCheckList[i]) return false
                             if(!character.weekendHomeworkCheckList[i][j]) return false
-                            return false
+                            return true
                         })
                     })
+                    console.log(character.weekendHomeworkCheckList)
                     var _character = new Character();
                     return Object.assign(_character, character);
                 });
