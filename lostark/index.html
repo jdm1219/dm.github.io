@@ -135,7 +135,7 @@
                             <img :src="'./images/' + homework.image" v-if="homework">
                             <p>{{ homework.title }}</p>
                         </td>
-                        <td v-for="(character, c) in characters" :key="c" :colspan="homework.isExpedition ? characters.length : 1" v-if="!(homework.isExpedition && c !== 1)">
+                        <td v-for="(character, c) in characters" :key="c" :colspan="homework.isExpedition ? characters.length : 1">
                             <label
                                 v-for="(check, j) in character.weekendHomeworkCheckList[i]"
                                 :key="j"
@@ -263,38 +263,17 @@
                 image: "guardian.png"
             },
             {
-                title: "태만의 바다",
-                minLevel: 915,
-                maxLevel: 1370,
-                clearGold: [180],
-                image: "abyss_dungeon1.png"
-            },
-            {
-                title: "고요한 카르코사",
-                minLevel: 915,
-                maxLevel: 1370,
-                clearGold: [220],
-                image: "abyss_dungeon1.png"
-            },
-            {
-                title: "아르카디아의 성역",
-                minLevel: 915,
-                maxLevel: 1370,
-                clearGold: [240],
-                image: "abyss_dungeon1.png"
-            },
-            {
                 title: "아이라의 눈",
                 minLevel: 1325,
                 maxLevel: 1415,
-                clearGold: [1250],
+                clearGold: [800],
                 image: "abyss_dungeon1.png"
             },
             {
                 title: "오레하 프라바사",
                 minLevel: 1325,
                 maxLevel: 1415,
-                clearGold: [1400],
+                clearGold: [900],
                 image: "abyss_dungeon1.png"
             },
             {
@@ -345,7 +324,23 @@
                 clearGold: [0],
                 isExpedition: true,
                 image: "legion_raid.png"
-            }
+            },
+            {
+                title: "아브렐슈드",
+                minLevel: 1490,
+                maxLevel: 9999,
+                clearGold: [4500,1500,1500],
+                checkboxTitle: ['1~2','3~4','5~6'],
+                image: "legion_raid.png"
+            },
+            {
+                title: "아브렐슈드 데자뷰",
+                minLevel: 0,
+                maxLevel: 9999,
+                clearGold: [0],
+                isExpedition: true,
+                image: "legion_raid.png"
+            },
         ]
 
         var Character = (function () {
@@ -373,7 +368,6 @@
                 })
             }
             Character.prototype.resetWeekendHomeworkCheckList = function() {
-                console.log(this.weekendHomeworkCheckList)
                 this.weekendHomeworkCheckList = weekendHomework.map(function(homework) {
                     return homework.clearGold.map(function(clear){
                         return false
@@ -443,7 +437,6 @@
                             return true
                         })
                     })
-                    console.log(character.weekendHomeworkCheckList)
                     var _character = new Character();
                     return Object.assign(_character, character);
                 });
@@ -513,7 +506,6 @@
                 },
                 getCharacterClearGold(character) {
                     var totalGold = 0;
-                    console.log(character)
                     for(var i=0; i < this.dailyHomework.length; i++) {
                         for(var j=0; j < this.dailyHomework[i].clearGold.length; j++) {
                             if(character.dailyHomeworkCheckList[i][j]){
