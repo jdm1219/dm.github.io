@@ -135,7 +135,7 @@
                             <img :src="'./images/' + homework.image" v-if="homework">
                             <p>{{ homework.title }}</p>
                         </td>
-                        <td v-for="(character, c) in characters" :key="c" :colspan="homework.isExpedition ? characters.length : 1">
+                        <td v-for="(character, c) in characters" :key="c" :colspan="homework.isExpedition ? characters.length : 1"  v-if="!(homework.isExpedition && c !== 0)">
                             <label
                                 v-for="(check, j) in character.weekendHomeworkCheckList[i]"
                                 :key="j"
@@ -337,8 +337,9 @@
                 title: "아브렐슈드 데자뷰",
                 minLevel: 0,
                 maxLevel: 9999,
-                clearGold: [0],
+                clearGold: [0,0],
                 isExpedition: true,
+                checkboxTitle: ['1~2','3~4'],
                 image: "legion_raid.png"
             },
         ]
@@ -455,15 +456,15 @@
             methods: {
                 addCharacter() {
                     if(!this.name) {
-                        alert("이름 똑바로 입력하세");
+                        alert("이름");
                         return;
                     }
                     if(!this.level || isNaN(this.level)) {
-                        alert("레벨 똑바로 입력하세");
+                        alert("레벨");
                         return;
                     }
                     if(!this.cls) {
-                        alert("직업 똑바로 입력하세");
+                        alert("직업");
                         return;
                     }
                     this.characters.push(new Character(this.name, this.level, this.cls));
